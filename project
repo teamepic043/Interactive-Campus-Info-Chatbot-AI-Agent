@@ -1,0 +1,491 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": []
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "CZTepUa2u_UF"
+      },
+      "source": [
+        "# Campus Brochure Generator\n",
+        "Fetches a website's landing page and relevant links, then generates a college/university brochure."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 15,
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "D163MjHau_UG",
+        "outputId": "5fbac254-d935-47d6-ad53-a6097fff422c"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Requirement already satisfied: langchain in /usr/local/lib/python3.12/dist-packages (1.2.10)\n",
+            "Requirement already satisfied: langchain-google-genai in /usr/local/lib/python3.12/dist-packages (4.2.1)\n",
+            "Requirement already satisfied: langchain-community in /usr/local/lib/python3.12/dist-packages (0.4.1)\n",
+            "Requirement already satisfied: beautifulsoup4 in /usr/local/lib/python3.12/dist-packages (4.13.5)\n",
+            "Requirement already satisfied: requests in /usr/local/lib/python3.12/dist-packages (2.32.5)\n",
+            "Requirement already satisfied: langchain-core<2.0.0,>=1.2.10 in /usr/local/lib/python3.12/dist-packages (from langchain) (1.2.17)\n",
+            "Requirement already satisfied: langgraph<1.1.0,>=1.0.8 in /usr/local/lib/python3.12/dist-packages (from langchain) (1.0.9)\n",
+            "Requirement already satisfied: pydantic<3.0.0,>=2.7.4 in /usr/local/lib/python3.12/dist-packages (from langchain) (2.12.3)\n",
+            "Requirement already satisfied: filetype<2.0.0,>=1.2.0 in /usr/local/lib/python3.12/dist-packages (from langchain-google-genai) (1.2.0)\n",
+            "Requirement already satisfied: google-genai<2.0.0,>=1.56.0 in /usr/local/lib/python3.12/dist-packages (from langchain-google-genai) (1.65.0)\n",
+            "Requirement already satisfied: langchain-classic<2.0.0,>=1.0.0 in /usr/local/lib/python3.12/dist-packages (from langchain-community) (1.0.2)\n",
+            "Requirement already satisfied: SQLAlchemy<3.0.0,>=1.4.0 in /usr/local/lib/python3.12/dist-packages (from langchain-community) (2.0.47)\n",
+            "Requirement already satisfied: PyYAML<7.0.0,>=5.3.0 in /usr/local/lib/python3.12/dist-packages (from langchain-community) (6.0.3)\n",
+            "Requirement already satisfied: aiohttp<4.0.0,>=3.8.3 in /usr/local/lib/python3.12/dist-packages (from langchain-community) (3.13.3)\n",
+            "Requirement already satisfied: tenacity!=8.4.0,<10.0.0,>=8.1.0 in /usr/local/lib/python3.12/dist-packages (from langchain-community) (9.1.4)\n",
+            "Requirement already satisfied: dataclasses-json<0.7.0,>=0.6.7 in /usr/local/lib/python3.12/dist-packages (from langchain-community) (0.6.7)\n",
+            "Requirement already satisfied: pydantic-settings<3.0.0,>=2.10.1 in /usr/local/lib/python3.12/dist-packages (from langchain-community) (2.13.1)\n",
+            "Requirement already satisfied: langsmith<1.0.0,>=0.1.125 in /usr/local/lib/python3.12/dist-packages (from langchain-community) (0.7.7)\n",
+            "Requirement already satisfied: httpx-sse<1.0.0,>=0.4.0 in /usr/local/lib/python3.12/dist-packages (from langchain-community) (0.4.3)\n",
+            "Requirement already satisfied: numpy>=1.26.2 in /usr/local/lib/python3.12/dist-packages (from langchain-community) (2.0.2)\n",
+            "Requirement already satisfied: soupsieve>1.2 in /usr/local/lib/python3.12/dist-packages (from beautifulsoup4) (2.8.3)\n",
+            "Requirement already satisfied: typing-extensions>=4.0.0 in /usr/local/lib/python3.12/dist-packages (from beautifulsoup4) (4.15.0)\n",
+            "Requirement already satisfied: charset_normalizer<4,>=2 in /usr/local/lib/python3.12/dist-packages (from requests) (3.4.4)\n",
+            "Requirement already satisfied: idna<4,>=2.5 in /usr/local/lib/python3.12/dist-packages (from requests) (3.11)\n",
+            "Requirement already satisfied: urllib3<3,>=1.21.1 in /usr/local/lib/python3.12/dist-packages (from requests) (2.5.0)\n",
+            "Requirement already satisfied: certifi>=2017.4.17 in /usr/local/lib/python3.12/dist-packages (from requests) (2026.2.25)\n",
+            "Requirement already satisfied: aiohappyeyeballs>=2.5.0 in /usr/local/lib/python3.12/dist-packages (from aiohttp<4.0.0,>=3.8.3->langchain-community) (2.6.1)\n",
+            "Requirement already satisfied: aiosignal>=1.4.0 in /usr/local/lib/python3.12/dist-packages (from aiohttp<4.0.0,>=3.8.3->langchain-community) (1.4.0)\n",
+            "Requirement already satisfied: attrs>=17.3.0 in /usr/local/lib/python3.12/dist-packages (from aiohttp<4.0.0,>=3.8.3->langchain-community) (25.4.0)\n",
+            "Requirement already satisfied: frozenlist>=1.1.1 in /usr/local/lib/python3.12/dist-packages (from aiohttp<4.0.0,>=3.8.3->langchain-community) (1.8.0)\n",
+            "Requirement already satisfied: multidict<7.0,>=4.5 in /usr/local/lib/python3.12/dist-packages (from aiohttp<4.0.0,>=3.8.3->langchain-community) (6.7.1)\n",
+            "Requirement already satisfied: propcache>=0.2.0 in /usr/local/lib/python3.12/dist-packages (from aiohttp<4.0.0,>=3.8.3->langchain-community) (0.4.1)\n",
+            "Requirement already satisfied: yarl<2.0,>=1.17.0 in /usr/local/lib/python3.12/dist-packages (from aiohttp<4.0.0,>=3.8.3->langchain-community) (1.22.0)\n",
+            "Requirement already satisfied: marshmallow<4.0.0,>=3.18.0 in /usr/local/lib/python3.12/dist-packages (from dataclasses-json<0.7.0,>=0.6.7->langchain-community) (3.26.2)\n",
+            "Requirement already satisfied: typing-inspect<1,>=0.4.0 in /usr/local/lib/python3.12/dist-packages (from dataclasses-json<0.7.0,>=0.6.7->langchain-community) (0.9.0)\n",
+            "Requirement already satisfied: anyio<5.0.0,>=4.8.0 in /usr/local/lib/python3.12/dist-packages (from google-genai<2.0.0,>=1.56.0->langchain-google-genai) (4.12.1)\n",
+            "Requirement already satisfied: google-auth<3.0.0,>=2.47.0 in /usr/local/lib/python3.12/dist-packages (from google-auth[requests]<3.0.0,>=2.47.0->google-genai<2.0.0,>=1.56.0->langchain-google-genai) (2.47.0)\n",
+            "Requirement already satisfied: httpx<1.0.0,>=0.28.1 in /usr/local/lib/python3.12/dist-packages (from google-genai<2.0.0,>=1.56.0->langchain-google-genai) (0.28.1)\n",
+            "Requirement already satisfied: websockets<17.0,>=13.0.0 in /usr/local/lib/python3.12/dist-packages (from google-genai<2.0.0,>=1.56.0->langchain-google-genai) (15.0.1)\n",
+            "Requirement already satisfied: distro<2,>=1.7.0 in /usr/local/lib/python3.12/dist-packages (from google-genai<2.0.0,>=1.56.0->langchain-google-genai) (1.9.0)\n",
+            "Requirement already satisfied: sniffio in /usr/local/lib/python3.12/dist-packages (from google-genai<2.0.0,>=1.56.0->langchain-google-genai) (1.3.1)\n",
+            "Requirement already satisfied: langchain-text-splitters<2.0.0,>=1.1.0 in /usr/local/lib/python3.12/dist-packages (from langchain-classic<2.0.0,>=1.0.0->langchain-community) (1.1.1)\n",
+            "Requirement already satisfied: jsonpatch<2.0.0,>=1.33.0 in /usr/local/lib/python3.12/dist-packages (from langchain-core<2.0.0,>=1.2.10->langchain) (1.33)\n",
+            "Requirement already satisfied: packaging>=23.2.0 in /usr/local/lib/python3.12/dist-packages (from langchain-core<2.0.0,>=1.2.10->langchain) (26.0)\n",
+            "Requirement already satisfied: uuid-utils<1.0,>=0.12.0 in /usr/local/lib/python3.12/dist-packages (from langchain-core<2.0.0,>=1.2.10->langchain) (0.14.1)\n",
+            "Requirement already satisfied: langgraph-checkpoint<5.0.0,>=2.1.0 in /usr/local/lib/python3.12/dist-packages (from langgraph<1.1.0,>=1.0.8->langchain) (4.0.0)\n",
+            "Requirement already satisfied: langgraph-prebuilt<1.1.0,>=1.0.8 in /usr/local/lib/python3.12/dist-packages (from langgraph<1.1.0,>=1.0.8->langchain) (1.0.8)\n",
+            "Requirement already satisfied: langgraph-sdk<0.4.0,>=0.3.0 in /usr/local/lib/python3.12/dist-packages (from langgraph<1.1.0,>=1.0.8->langchain) (0.3.9)\n",
+            "Requirement already satisfied: xxhash>=3.5.0 in /usr/local/lib/python3.12/dist-packages (from langgraph<1.1.0,>=1.0.8->langchain) (3.6.0)\n",
+            "Requirement already satisfied: orjson>=3.9.14 in /usr/local/lib/python3.12/dist-packages (from langsmith<1.0.0,>=0.1.125->langchain-community) (3.11.7)\n",
+            "Requirement already satisfied: requests-toolbelt>=1.0.0 in /usr/local/lib/python3.12/dist-packages (from langsmith<1.0.0,>=0.1.125->langchain-community) (1.0.0)\n",
+            "Requirement already satisfied: zstandard>=0.23.0 in /usr/local/lib/python3.12/dist-packages (from langsmith<1.0.0,>=0.1.125->langchain-community) (0.25.0)\n",
+            "Requirement already satisfied: annotated-types>=0.6.0 in /usr/local/lib/python3.12/dist-packages (from pydantic<3.0.0,>=2.7.4->langchain) (0.7.0)\n",
+            "Requirement already satisfied: pydantic-core==2.41.4 in /usr/local/lib/python3.12/dist-packages (from pydantic<3.0.0,>=2.7.4->langchain) (2.41.4)\n",
+            "Requirement already satisfied: typing-inspection>=0.4.2 in /usr/local/lib/python3.12/dist-packages (from pydantic<3.0.0,>=2.7.4->langchain) (0.4.2)\n",
+            "Requirement already satisfied: python-dotenv>=0.21.0 in /usr/local/lib/python3.12/dist-packages (from pydantic-settings<3.0.0,>=2.10.1->langchain-community) (1.2.1)\n",
+            "Requirement already satisfied: greenlet>=1 in /usr/local/lib/python3.12/dist-packages (from SQLAlchemy<3.0.0,>=1.4.0->langchain-community) (3.3.2)\n",
+            "Requirement already satisfied: pyasn1-modules>=0.2.1 in /usr/local/lib/python3.12/dist-packages (from google-auth<3.0.0,>=2.47.0->google-auth[requests]<3.0.0,>=2.47.0->google-genai<2.0.0,>=1.56.0->langchain-google-genai) (0.4.2)\n",
+            "Requirement already satisfied: rsa<5,>=3.1.4 in /usr/local/lib/python3.12/dist-packages (from google-auth<3.0.0,>=2.47.0->google-auth[requests]<3.0.0,>=2.47.0->google-genai<2.0.0,>=1.56.0->langchain-google-genai) (4.9.1)\n",
+            "Requirement already satisfied: httpcore==1.* in /usr/local/lib/python3.12/dist-packages (from httpx<1.0.0,>=0.28.1->google-genai<2.0.0,>=1.56.0->langchain-google-genai) (1.0.9)\n",
+            "Requirement already satisfied: h11>=0.16 in /usr/local/lib/python3.12/dist-packages (from httpcore==1.*->httpx<1.0.0,>=0.28.1->google-genai<2.0.0,>=1.56.0->langchain-google-genai) (0.16.0)\n",
+            "Requirement already satisfied: jsonpointer>=1.9 in /usr/local/lib/python3.12/dist-packages (from jsonpatch<2.0.0,>=1.33.0->langchain-core<2.0.0,>=1.2.10->langchain) (3.0.0)\n",
+            "Requirement already satisfied: ormsgpack>=1.12.0 in /usr/local/lib/python3.12/dist-packages (from langgraph-checkpoint<5.0.0,>=2.1.0->langgraph<1.1.0,>=1.0.8->langchain) (1.12.2)\n",
+            "Requirement already satisfied: mypy-extensions>=0.3.0 in /usr/local/lib/python3.12/dist-packages (from typing-inspect<1,>=0.4.0->dataclasses-json<0.7.0,>=0.6.7->langchain-community) (1.1.0)\n",
+            "Requirement already satisfied: pyasn1<0.7.0,>=0.6.1 in /usr/local/lib/python3.12/dist-packages (from pyasn1-modules>=0.2.1->google-auth<3.0.0,>=2.47.0->google-auth[requests]<3.0.0,>=2.47.0->google-genai<2.0.0,>=1.56.0->langchain-google-genai) (0.6.2)\n"
+          ]
+        }
+      ],
+      "source": [
+        "# Install dependencies\n",
+        "!pip install langchain langchain-google-genai langchain-community beautifulsoup4 requests"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 16,
+      "metadata": {
+        "id": "lzRGfoPru_UH"
+      },
+      "outputs": [],
+      "source": [
+        "import json\n",
+        "import requests\n",
+        "from bs4 import BeautifulSoup\n",
+        "from IPython.display import Markdown, display\n",
+        "\n",
+        "# LangChain imports\n",
+        "from langchain_google_genai import ChatGoogleGenerativeAI\n",
+        "from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate\n",
+        "from langchain_core.output_parsers import PydanticOutputParser\n",
+        "from langchain_core.output_parsers import StrOutputParser, JsonOutputParser\n",
+        "from langchain_core.runnables import RunnableLambda, RunnablePassthrough\n",
+        "from pydantic import BaseModel, Field\n",
+        "from typing import List"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# --- API Key Setup ---\n",
+        "from google.colab import userdata\n",
+        "import os\n",
+        "\n",
+        "os.environ[\"GOOGLE_API_KEY\"] = userdata.get('Gemini1')"
+      ],
+      "metadata": {
+        "id": "US6WfdSTxaf2"
+      },
+      "execution_count": 17,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 18,
+      "metadata": {
+        "id": "y6kGpW0Yu_UH"
+      },
+      "outputs": [],
+      "source": [
+        "# --- LLM Initialization ---\n",
+        "# Model for structured JSON link extraction\n",
+        "links_llm = ChatGoogleGenerativeAI(\n",
+        "    model=\"gemini-2.5-flash-lite\",\n",
+        "    temperature=0\n",
+        ")\n",
+        "\n",
+        "# Model for brochure generation\n",
+        "brochure_llm = ChatGoogleGenerativeAI(\n",
+        "    model=\"gemini-2.5-flash-lite\",\n",
+        "    temperature=0\n",
+        ")"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 19,
+      "metadata": {
+        "id": "6U2rgd1ku_UH"
+      },
+      "outputs": [],
+      "source": [
+        "# --- Web Scraping Utilities ---\n",
+        "\n",
+        "HEADERS = {\n",
+        "    \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) \"\n",
+        "                  \"AppleWebKit/537.36 (KHTML, like Gecko) \"\n",
+        "                  \"Chrome/117.0.0.0 Safari/537.36\"\n",
+        "}\n",
+        "\n",
+        "def fetch_website_contents(url: str) -> str:\n",
+        "    \"\"\"Fetch and return the visible text content of a webpage.\"\"\"\n",
+        "    response = requests.get(url, headers=HEADERS)\n",
+        "    response.raise_for_status()\n",
+        "    soup = BeautifulSoup(response.text, \"html.parser\")\n",
+        "    return soup.get_text(separator=\" \", strip=True)\n",
+        "\n",
+        "def fetch_website_links(url: str) -> list[str]:\n",
+        "    \"\"\"Fetch all href links from a webpage.\"\"\"\n",
+        "    response = requests.get(url, headers=HEADERS)\n",
+        "    response.raise_for_status()\n",
+        "    soup = BeautifulSoup(response.content, \"html.parser\")\n",
+        "    links = [a.get(\"href\") for a in soup.find_all(\"a\")]\n",
+        "    return [link for link in links if link]"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 20,
+      "metadata": {
+        "id": "IXSgNa9wu_UH"
+      },
+      "outputs": [],
+      "source": [
+        "# --- Pydantic Schema for Structured Output ---\n",
+        "\n",
+        "class LinkEntry(BaseModel):\n",
+        "    type: str = Field(description=\"Type of the page, e.g. 'about page', 'careers page'\")\n",
+        "    url: str = Field(description=\"Full https URL of the page\")\n",
+        "\n",
+        "class RelevantLinks(BaseModel):\n",
+        "    links: List[LinkEntry] = Field(description=\"List of relevant college links\")"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 21,
+      "metadata": {
+        "id": "p9gZfslVu_UI"
+      },
+      "outputs": [],
+      "source": [
+        "# --- Chain 1: Relevant Link Extractor ---\n",
+        "\n",
+        "link_parser = PydanticOutputParser(pydantic_object=RelevantLinks)\n",
+        "\n",
+        "links_prompt = ChatPromptTemplate.from_messages([\n",
+        "    SystemMessagePromptTemplate.from_template(\n",
+        "        \"\"\"You are going to fetch relevant links from a website such as About Us, Social Media, and Careers pages.\n",
+        "You must respond ONLY with valid JSON matching this schema:\n",
+        "{format_instructions}\"\"\"\n",
+        "    ),\n",
+        "    HumanMessagePromptTemplate.from_template(\n",
+        "        \"\"\"Here is the list of links on the website {url}.\n",
+        "Please decide which of these are relevant for a college or University brochure.\n",
+        "Respond with the full https URL in JSON format.\n",
+        "Do NOT include Terms of Service, Privacy, or email links.\n",
+        "\n",
+        "Links (some might be relative):\n",
+        "{links}\"\"\"\n",
+        "    )\n",
+        "])\n",
+        "\n",
+        "links_chain = links_prompt | links_llm | link_parser\n",
+        "\n",
+        "def extract_relevant_links(url: str) -> list[dict]:\n",
+        "    \"\"\"Use LangChain chain to extract relevant links from a URL.\"\"\"\n",
+        "    raw_links = fetch_website_links(url)\n",
+        "    links_str = \"\\n\".join(raw_links)\n",
+        "    result = links_chain.invoke({\n",
+        "        \"url\": url,\n",
+        "        \"links\": links_str,\n",
+        "        \"format_instructions\": link_parser.get_format_instructions()\n",
+        "    })\n",
+        "    return [link.dict() for link in result.links]"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 22,
+      "metadata": {
+        "id": "SGFw59icu_UI"
+      },
+      "outputs": [],
+      "source": [
+        "# --- Content Aggregator ---\n",
+        "\n",
+        "def fetch_page_and_all_relevant_links(url: str) -> str:\n",
+        "    \"\"\"Fetch landing page content + all relevant linked pages.\"\"\"\n",
+        "    contents = fetch_website_contents(url)\n",
+        "    relevant_links = extract_relevant_links(url)\n",
+        "\n",
+        "    result = f\"## Landing Page:\\n\\n{contents}\\n\\n## Relevant Links:\\n\"\n",
+        "\n",
+        "    for link in relevant_links:\n",
+        "        try:\n",
+        "            result += f\"\\n\\n### {link['type']}\\n\"\n",
+        "            result += fetch_website_contents(link[\"url\"])\n",
+        "        except requests.exceptions.HTTPError as e:\n",
+        "            result += f\"\\n\\n### {link['type']} (Error: {e})\\n\"\n",
+        "            result += \"Could not fetch content for this link.\"\n",
+        "\n",
+        "    return result"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 23,
+      "metadata": {
+        "id": "Dbc2hJuLu_UI"
+      },
+      "outputs": [],
+      "source": [
+        "# --- Chain 2: Brochure Generator ---\n",
+        "\n",
+        "brochure_prompt = ChatPromptTemplate.from_messages([\n",
+        "    SystemMessagePromptTemplate.from_template(\n",
+        "      \"\"\"You are an informative assistant that creates engaging brochures for Colleges and Universities\n",
+        "        to help prospective students decide whether to apply. Keep it positive, concise, and structured in markdown.\"\"\"\n",
+        "    ),\n",
+        "    HumanMessagePromptTemplate.from_template(\n",
+        "        \"\"\"You are looking at a company called: {company_name}\n",
+        "Here are the contents of its landing page and other relevant pages;\n",
+        "use this information to build a short brochure of the college in markdown without code blocks.\n",
+        "\n",
+        "{page_contents}\"\"\"\n",
+        "    )\n",
+        "])\n",
+        "\n",
+        "brochure_chain = brochure_prompt | brochure_llm | StrOutputParser()"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 24,
+      "metadata": {
+        "id": "Xo1XHu0cu_UI"
+      },
+      "outputs": [],
+      "source": [
+        "# --- Full Pipeline ---\n",
+        "\n",
+        "def create_brochure(company_name: str, url: str) -> str:\n",
+        "    \"\"\"End-to-end pipeline: scrape website → extract links → generate brochure.\"\"\"\n",
+        "    print(f\"Fetching content for {company_name} at {url}...\")\n",
+        "    page_contents = fetch_page_and_all_relevant_links(url)\n",
+        "    page_contents = page_contents[:5_000]  # Truncate to avoid token limits\n",
+        "\n",
+        "    print(\"Generating brochure...\")\n",
+        "    brochure = brochure_chain.invoke({\n",
+        "        \"company_name\": company_name,\n",
+        "        \"page_contents\": page_contents\n",
+        "    })\n",
+        "    return brochure"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 13,
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 868
+        },
+        "id": "BmfZJ2cVu_UI",
+        "outputId": "97c73df9-6482-4537-b540-f536f7603739"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Fetching content for Anits at https://anits.org/...\n"
+          ]
+        },
+        {
+          "output_type": "stream",
+          "name": "stderr",
+          "text": [
+            "/tmp/ipykernel_696/2810945645.py:33: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/\n",
+            "  return [link.dict() for link in result.links]\n"
+          ]
+        },
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Generating brochure...\n"
+          ]
+        },
+        {
+          "output_type": "display_data",
+          "data": {
+            "text/plain": [
+              "<IPython.core.display.Markdown object>"
+            ],
+            "text/markdown": "## Discover Your Future at ANITS!\n\nAnil Neerukonda Institute of Technology & Sciences (ANITS), Visakhapatnam, is a premier institution dedicated to fostering innovation, academic excellence, and holistic development. Owned by Megha Engineering and Infrastructure Limited (MEIL) and established by the Anil Neerukonda Educational Society (ANES), ANITS is a beacon of learning, inspired by the vision of its founder, Dr. N.B.R. Prasad.\n\n---\n\n### Why Choose ANITS?\n\n*   **Accolades & Recognition:** Proudly holding the NAAC \"A+\" accreditation, ANITS is recognized by AICTE and affiliated with Andhra University. We are also NBA accredited and consistently ranked by NIRF.\n*   **Vibrant Academic Environment:** With over 6,000 active students and 390 dedicated teaching staff, including over 50% with PhDs, ANITS offers a rich learning experience.\n*   **Research & Innovation Hub:** We boast over 5,000 publications, 22 H-Index, 50+ research projects, and 200+ patents, fostering a culture of cutting-edge research and development.\n*   **Industry Connections:** Our strong ties with industry leaders ensure students are well-prepared for future careers.\n*   **Holistic Development:** Beyond academics, ANITS encourages participation in NSS, NCC, and various professional bodies, promoting well-rounded individuals.\n\n---\n\n### Programs Offered\n\nANITS provides a diverse range of undergraduate and postgraduate programs across various disciplines:\n\n*   Chemical Engineering\n*   Civil Engineering\n*   Computer Science and Engineering\n*   Computer Science and Engineering (AI & ML)\n*   Computer Science and Engineering (Data Science)\n*   Electrical & Electronics Engineering\n*   Electronics & Communication Engineering\n*   Information Technology\n*   MBA (Hospital Administration)\n*   Basic Sciences & Humanities (Chemistry, English, Mathematics, Physics)\n\n---\n\n### Campus Life & Facilities\n\n*   **State-of-the-Art Infrastructure:** Modern classrooms, well-equipped laboratories, and extensive library resources.\n*   **Student Support:** Hostel facilities, transportation services, and dedicated student support committees.\n*   **Continuous Learning:** Access to E-Learning platforms, SWAYAM-NPTEL courses, and regular Faculty Development Programs (FDPs).\n*   **Events & Workshops:** A dynamic calendar of events, including workshops on Cyber Security, AI & ML, and career initiatives, bridging academia and industry.\n\n---\n\n**ANITS: Where your brightest colours come alive and horizons are limitless.**\n\n**Admissions:**\nEmail: principal@anits.edu.in\nPhone: 7330789893, 8712005999, 8712008222"
+          },
+          "metadata": {}
+        }
+      ],
+      "source": [
+        "# --- Run It! ---\n",
+        "brochure = create_brochure(\"Anits\", \"https://anits.org/\")\n",
+        "display(Markdown(brochure))"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# ── Gradio UI ────────────────────────────────────────\n",
+        "import gradio as gr\n",
+        "with gr.Blocks(title=\"Campus Brochure Generator\", theme=gr.themes.Soft()) as demo:\n",
+        "    gr.Markdown(\"# 🎓 Campus Brochure Generator\")\n",
+        "    gr.Markdown(\"Enter a college/university URL to Generate a Brochure for the College/University\")\n",
+        "\n",
+        "    with gr.Row():\n",
+        "        # Input Column\n",
+        "        with gr.Column(scale=1):\n",
+        "            college_name = gr.Textbox(\n",
+        "                label=\"🏫 College / University Name\",\n",
+        "                placeholder=\"e.g. MIT\"\n",
+        "            )\n",
+        "            college_url = gr.Textbox(\n",
+        "                label=\"🌐 Website URL\",\n",
+        "                placeholder=\"https://mit.edu\"\n",
+        "            )\n",
+        "            generate_btn = gr.Button(\"✨ Generate Brochure\", variant=\"primary\")\n",
+        "\n",
+        "        # Result Column\n",
+        "        with gr.Column(scale=2):\n",
+        "            output = gr.Markdown(\n",
+        "                label=\"Generated Brochure\",\n",
+        "                value=\"_Your brochure will appear here..._\"\n",
+        "            )\n",
+        "\n",
+        "    # Event Listener\n",
+        "    generate_btn.click(\n",
+        "        fn=create_brochure,\n",
+        "        inputs=[college_name, college_url],\n",
+        "        outputs=output\n",
+        "    )\n",
+        "\n",
+        "    # Examples\n",
+        "    gr.Examples(\n",
+        "        examples=[\n",
+        "            [\"ANITS\", \"https://anits.org/\"],\n",
+        "            [\"IIT Bombay\", \"https://www.iitb.ac.in/\"],\n",
+        "        ],\n",
+        "        inputs=[college_name, college_url]\n",
+        "    )\n",
+        "\n",
+        "if __name__ == \"__main__\":\n",
+        "    demo.launch()"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 684
+        },
+        "id": "ZeD-oF99Mq-L",
+        "outputId": "eacf4cda-6d2e-4347-b2d9-8ae799fdb064"
+      },
+      "execution_count": 25,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stderr",
+          "text": [
+            "/tmp/ipykernel_696/3365767287.py:3: DeprecationWarning: The 'theme' parameter in the Blocks constructor will be removed in Gradio 6.0. You will need to pass 'theme' to Blocks.launch() instead.\n",
+            "  with gr.Blocks(title=\"Campus Brochure Generator\", theme=gr.themes.Soft()) as demo:\n"
+          ]
+        },
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "It looks like you are running Gradio on a hosted Jupyter notebook, which requires `share=True`. Automatically setting `share=True` (you can turn this off by setting `share=False` in `launch()` explicitly).\n",
+            "\n",
+            "Colab notebook detected. To show errors in colab notebook, set debug=True in launch()\n",
+            "* Running on public URL: https://dbea100b333bc356a0.gradio.live\n",
+            "\n",
+            "This share link expires in 1 week. For free permanent hosting and GPU upgrades, run `gradio deploy` from the terminal in the working directory to deploy to Hugging Face Spaces (https://huggingface.co/spaces)\n"
+          ]
+        },
+        {
+          "output_type": "display_data",
+          "data": {
+            "text/plain": [
+              "<IPython.core.display.HTML object>"
+            ],
+            "text/html": [
+              "<div><iframe src=\"https://dbea100b333bc356a0.gradio.live\" width=\"100%\" height=\"500\" allow=\"autoplay; camera; microphone; clipboard-read; clipboard-write;\" frameborder=\"0\" allowfullscreen></iframe></div>"
+            ]
+          },
+          "metadata": {}
+        }
+      ]
+    }
+  ]
+}
